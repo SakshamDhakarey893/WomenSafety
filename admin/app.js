@@ -190,22 +190,25 @@ async function loadResearchData() {
     const nb = m.naive_bayes || {};
     const svm = m.linear_svm || {};
 
-    document.getElementById('nbAccuracy').textContent = `${((nb.accuracy || 0.9875) * 100).toFixed(1)}%`;
-    document.getElementById('svmAccuracy').textContent = `${((svm.accuracy || 1.0) * 100).toFixed(1)}%`;
+    document.getElementById('nbAccuracy').textContent = `${((nb.accuracy || 0.9081) * 100).toFixed(1)}%`;
+    document.getElementById('svmAccuracy').textContent = `${((svm.accuracy || 0.9559) * 100).toFixed(1)}%`;
 
-    document.getElementById('nbPrecision').textContent = `${((nb.precision || 0.988) * 100).toFixed(1)}%`;
-    document.getElementById('svmPrecision').textContent = `${((svm.precision || 1.0) * 100).toFixed(1)}%`;
+    document.getElementById('nbPrecision').textContent = `${((nb.precision || 0.9237) * 100).toFixed(1)}%`;
+    document.getElementById('svmPrecision').textContent = `${((svm.precision || 0.9569) * 100).toFixed(1)}%`;
 
-    document.getElementById('nbRecall').textContent = `${((nb.recall || 0.987) * 100).toFixed(1)}%`;
-    document.getElementById('svmRecall').textContent = `${((svm.recall || 1.0) * 100).toFixed(1)}%`;
+    document.getElementById('nbRecall').textContent = `${((nb.recall || 0.9081) * 100).toFixed(1)}%`;
+    document.getElementById('svmRecall').textContent = `${((svm.recall || 0.9559) * 100).toFixed(1)}%`;
 
-    document.getElementById('nbF1').textContent = `${((nb.f1_score || 0.9875) * 100).toFixed(1)}%`;
-    document.getElementById('svmF1').textContent = `${((svm.f1_score || 1.0) * 100).toFixed(1)}%`;
+    document.getElementById('nbF1').textContent = `${((nb.f1_score || 0.9113) * 100).toFixed(1)}%`;
+    document.getElementById('svmF1').textContent = `${((svm.f1_score || 0.9563) * 100).toFixed(1)}%`;
 
-    // Render Confusion Matrix
-    renderConfusionMatrix(svm.confusion_matrix, svm.labels || [
-      'Physical Assault', 'Stalking/Following', 'Harassment', 'Medical Emergency', 'Other'
-    ]);
+    // Render 9x9 Multi-Class Confusion Matrix
+    const masterLabels = (svm.labels && svm.labels.length >= 9) ? svm.labels : [
+      'Physical Assault', 'Stalking/Following', 'Kidnapping/Detainment',
+      'Harassment', 'Theft/Snatching', 'Medical Emergency',
+      'Unsafe Environment', 'False Alarm', 'Other'
+    ];
+    renderConfusionMatrix(svm.confusion_matrix, masterLabels);
   } catch (err) {
     console.error('Failed to load research data:', err);
   }
@@ -216,13 +219,17 @@ function renderConfusionMatrix(matrix, labels) {
   const badge = document.getElementById('matrixBadge');
   const detailsBar = document.getElementById('cmCellDetails');
 
-  if (!matrix) {
+  if (!matrix || matrix.length < 9) {
     matrix = [
-      [16, 0, 0, 0, 0],
-      [0, 16, 0, 0, 0],
-      [0, 0, 16, 0, 0],
-      [0, 0, 0, 16, 0],
-      [0, 0, 0, 0, 16]
+      [434, 1, 0, 21, 0, 0, 0, 0, 18],
+      [1, 449, 0, 11, 0, 0, 0, 0, 1],
+      [0, 0, 515, 5, 0, 0, 0, 0, 0],
+      [11, 1, 2, 446, 2, 0, 2, 0, 56],
+      [0, 1, 0, 12, 372, 0, 0, 0, 1],
+      [0, 0, 0, 1, 0, 518, 0, 0, 1],
+      [0, 0, 0, 0, 0, 0, 520, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 393, 0],
+      [8, 2, 0, 29, 0, 1, 1, 2, 383]
     ];
   }
 

@@ -16,8 +16,12 @@ class AdminController {
       const categoryCounts = {
         'Physical Assault': 0,
         'Stalking/Following': 0,
+        'Kidnapping/Detainment': 0,
         'Harassment': 0,
+        'Theft/Snatching': 0,
         'Medical Emergency': 0,
+        'Unsafe Environment': 0,
+        'False Alarm': 0,
         'Other': 0
       };
 

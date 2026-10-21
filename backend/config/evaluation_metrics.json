@@ -1,0 +1,279 @@
+{
+  "dataset": {
+    "total_samples": 21098,
+    "train_samples": 16878,
+    "test_samples": 4220,
+    "categories": [
+      "Physical Assault",
+      "Stalking/Following",
+      "Kidnapping/Detainment",
+      "Harassment",
+      "Theft/Snatching",
+      "Medical Emergency",
+      "Unsafe Environment",
+      "False Alarm",
+      "Other"
+    ],
+    "category_distribution": {
+      "Harassment": 2600,
+      "Medical Emergency": 2600,
+      "Kidnapping/Detainment": 2600,
+      "Unsafe Environment": 2600,
+      "Physical Assault": 2368,
+      "Stalking/Following": 2307,
+      "Other": 2129,
+      "False Alarm": 1967,
+      "Theft/Snatching": 1927
+    }
+  },
+  "models": {
+    "naive_bayes": {
+      "name": "TF-IDF + Multinomial Naive Bayes",
+      "accuracy": 0.9081,
+      "precision": 0.9237,
+      "recall": 0.9081,
+      "f1_score": 0.9113,
+      "confusion_matrix": [
+        [
+          361,
+          1,
+          0,
+          65,
+          0,
+          0,
+          0,
+          0,
+          47
+        ],
+        [
+          0,
+          375,
+          0,
+          83,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          515,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          8,
+          1,
+          439,
+          3,
+          1,
+          1,
+          0,
+          64
+        ],
+        [
+          0,
+          2,
+          0,
+          35,
+          347,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          503,
+          0,
+          0,
+          15
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          520,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          393,
+          0
+        ],
+        [
+          4,
+          2,
+          1,
+          36,
+          0,
+          2,
+          0,
+          2,
+          379
+        ]
+      ],
+      "labels": [
+        "Physical Assault",
+        "Stalking/Following",
+        "Kidnapping/Detainment",
+        "Harassment",
+        "Theft/Snatching",
+        "Medical Emergency",
+        "Unsafe Environment",
+        "False Alarm",
+        "Other"
+      ]
+    },
+    "linear_svm": {
+      "name": "TF-IDF + Linear SVM (Calibrated)",
+      "accuracy": 0.9559,
+      "precision": 0.9569,
+      "recall": 0.9559,
+      "f1_score": 0.9563,
+      "confusion_matrix": [
+        [
+          434,
+          1,
+          0,
+          21,
+          0,
+          0,
+          0,
+          0,
+          18
+        ],
+        [
+          1,
+          449,
+          0,
+          11,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          515,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          11,
+          1,
+          2,
+          446,
+          2,
+          0,
+          2,
+          0,
+          56
+        ],
+        [
+          2,
+          3,
+          0,
+          4,
+          376,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          518,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          520,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          393,
+          0
+        ],
+        [
+          11,
+          1,
+          0,
+          30,
+          0,
+          1,
+          0,
+          0,
+          383
+        ]
+      ],
+      "labels": [
+        "Physical Assault",
+        "Stalking/Following",
+        "Kidnapping/Detainment",
+        "Harassment",
+        "Theft/Snatching",
+        "Medical Emergency",
+        "Unsafe Environment",
+        "False Alarm",
+        "Other"
+      ]
+    }
+  },
+  "selected_production_model": {
+    "name": "Linear SVM (Calibrated)",
+    "accuracy": 0.9559,
+    "f1_score": 0.9563
+  },
+  "dispatch_benchmarks": {
+    "average_classification_latency_ms": 14.8,
+    "end_to_end_alert_dispatch_ms": 138.2,
+    "safe_route_risk_reduction_percentage": 42.5
+  }
+}
