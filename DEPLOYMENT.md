@@ -173,7 +173,7 @@ class SafetyApiClient(
 ```
 
 ### Building a Release APK / Google Play AAB
-To build an optimized release bundle for the Google Play Store:
+To build an optimized release bundle for direct distribution or Google Play Store:
 ```bash
 # Generate Release APK
 ./gradlew :androidApp:assembleRelease
@@ -181,11 +181,42 @@ To build an optimized release bundle for the Google Play Store:
 # Generate Google Play App Bundle (.aab)
 ./gradlew :androidApp:bundleRelease
 ```
-Outputs will be generated under `androidApp/build/outputs/bundle/release/`.
+Outputs will be generated under `androidApp/build/outputs/apk/release/` and `androidApp/build/outputs/bundle/release/`.
 
 ---
 
-## 7. Security Hardening Checklist for Production
+## 7. 100% Free Over-The-Air (OTA) In-App Auto-Updates (Zero Store Fees)
+
+ShaktiSense includes an integrated **In-App Self-Updater** that allows updating features and UI screens across all installed Android devices without paying the $25 Google Play Console fee:
+
+### How to Release a Free App Update:
+1. **Increase Version in `androidApp/build.gradle.kts`:**
+   ```kotlin
+   versionCode = 2
+   versionName = "1.1.0"
+   ```
+2. **Build the Release APK:**
+   ```bash
+   ./gradlew :androidApp:assembleRelease
+   ```
+3. **Upload to GitHub Releases:**
+   - Go to your GitHub repository -> **Releases** -> **Create a new release** (tag: `v1.1.0`).
+   - Attach the compiled APK (`androidApp-release.apk`).
+4. **Update Backend Version Endpoint (or `.env` in Cloud):**
+   ```env
+   APP_LATEST_VERSION_CODE=2
+   APP_LATEST_VERSION_NAME=1.1.0
+   APP_RELEASE_APK_URL=https://github.com/SakshamDhakarey893/WomenSafety/releases/download/v1.1.0/androidApp-release.apk
+   APP_RELEASE_NOTES=• Added real-time live location tracking\n• Battery-optimized sensor processing
+   ```
+5. **Next App Launch on Phones:**
+   - ShaktiSense automatically detects `versionCode 2 > 1`.
+   - Displays a modal dialog with release notes.
+   - When the user taps **"Update Now"**, Android's native `DownloadManager` securely downloads the APK and prompts the user to apply the update without losing any app data.
+
+---
+
+## 8. Security Hardening Checklist for Production
 
 - [ ] **HTTPS / TLS Encryption:** Put Nginx or Cloudflare in front of port 5000 and 5001 with SSL certificates (`certbot --nginx`).
 - [ ] **JWT Key Rotation:** Ensure `JWT_SECRET` is not set to default development values.

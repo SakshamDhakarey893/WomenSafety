@@ -44,6 +44,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// App Version & Update Endpoint (For Free Over-The-Air In-App Updates)
+app.get('/api/app/version', (req, res) => {
+  res.json({
+    latestVersionCode: parseInt(process.env.APP_LATEST_VERSION_CODE || '1', 10),
+    latestVersionName: process.env.APP_LATEST_VERSION_NAME || '1.0.0',
+    apkUrl: process.env.APP_RELEASE_APK_URL || 'https://github.com/SakshamDhakarey893/WomenSafety/releases/latest/download/androidApp-release.apk',
+    releaseNotes: process.env.APP_RELEASE_NOTES || '• Initial Release\n• Enhanced Real-time Threat Detection\n• Battery-optimized Emergency Dispatch',
+    forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 1. Authentication Routes
 const authRouter = express.Router();
 authRouter.post('/register', AuthController.register);

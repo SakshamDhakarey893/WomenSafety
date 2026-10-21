@@ -207,7 +207,46 @@ class SafetyApiClient(
             false
         }
     }
+
+    /**
+     * Checks backend for available over-the-air updates hosted on GitHub Releases.
+     * 100% Free distribution mechanism bypassing third-party store fees.
+     */
+    suspend fun checkAppVersion(): AppUpdateInfo? = withContext(Dispatchers.Default) {
+        try {
+            val response: HttpResponse = client.get("$baseUrl/api/app/version")
+            if (response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                val versionCode = Regex(""""latestVersionCode"\s*:\s*(\d+)""").find(body)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                val versionName = Regex(""""latestVersionName"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1) ?: "1.0.0"
+                val apkUrl = Regex(""""apkUrl"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1) ?: ""
+                val releaseNotes = Regex(""""releaseNotes"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1)?.replace("\\n", "\n")
+                    ?: "• Performance improvements and bug fixes"
+                val forceUpdate = Regex(""""forceUpdate"\s*:\s*(true|false)""").find(body)?.groupValues?.get(1)?.toBoolean() ?: false
+
+                AppUpdateInfo(
+                    latestVersionCode = versionCode,
+                    latestVersionName = versionName,
+                    apkUrl = apkUrl,
+                    releaseNotes = releaseNotes,
+                    forceUpdate = forceUpdate
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
+
+data class AppUpdateInfo(
+    val latestVersionCode: Int,
+    val latestVersionName: String,
+    val apkUrl: String,
+    val releaseNotes: String,
+    val forceUpdate: Boolean = false
+)
 
 data class NetworkAuthResult(
     val success: Boolean,

@@ -10,10 +10,17 @@ class AppState(private val scope: CoroutineScope) {
     val apiClient = SafetyApiClient()
     var isBackendConnected by mutableStateOf(false)
 
+    // In-App Auto-Update State
+    var availableUpdate by mutableStateOf<com.example.womensafty.network.AppUpdateInfo?>(null)
+    var showUpdateDialog by mutableStateOf(false)
+    var isDownloadingUpdate by mutableStateOf(false)
+    var updateStatusMessage by mutableStateOf("")
+
     init {
         scope.launch {
             isBackendConnected = apiClient.checkHealth()
             isOfflineMode = !isBackendConnected
+            checkForAppUpdates(currentVersionCode = 1)
         }
     }
 
@@ -21,6 +28,23 @@ class AppState(private val scope: CoroutineScope) {
         scope.launch {
             isBackendConnected = apiClient.checkHealth()
             isOfflineMode = !isBackendConnected
+            checkForAppUpdates(currentVersionCode = 1)
+        }
+    }
+
+    fun checkForAppUpdates(currentVersionCode: Int = 1) {
+        scope.launch {
+            val update = apiClient.checkAppVersion()
+            if (update != null && update.latestVersionCode > currentVersionCode) {
+                availableUpdate = update
+                showUpdateDialog = true
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        if (availableUpdate?.forceUpdate != true) {
+            showUpdateDialog = false
         }
     }
 

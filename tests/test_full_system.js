@@ -80,6 +80,13 @@ async function runTests() {
     }
   });
 
+  await assertTest('In-App Self-Update Version Check API', async () => {
+    const res = await request(`${BACKEND_BASE}/api/app/version`);
+    if (res.status !== 200 || typeof res.data.latestVersionCode !== 'number' || !res.data.apkUrl) {
+      throw new Error(`Invalid app version response: ${JSON.stringify(res.data)}`);
+    }
+  });
+
   // 2. Auth Flow
   const testEmail = `test_safety_${Date.now()}@example.com`;
   await assertTest('User Registration & JWT Generation', async () => {

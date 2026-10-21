@@ -17,7 +17,10 @@ import com.example.womensafty.ui.screens.*
 import com.example.womensafty.ui.theme.WomenSafetyTheme
 
 @Composable
-fun App(providedAppState: AppState? = null) {
+fun App(
+    providedAppState: AppState? = null,
+    onTriggerUpdate: ((apkUrl: String, versionName: String) -> Unit)? = null
+) {
     val scope = rememberCoroutineScope()
     val appState = providedAppState ?: remember { AppState(scope) }
 
@@ -95,6 +98,21 @@ fun App(providedAppState: AppState? = null) {
                 // Disguised Fake Incoming Call Overlay on top of all views
                 if (appState.isFakeCallActive) {
                     FakeCallOverlay(appState = appState)
+                }
+
+                // In-App Auto-Update Notification Dialog
+                if (appState.showUpdateDialog && appState.availableUpdate != null) {
+                    AppUpdateDialog(
+                        updateInfo = appState.availableUpdate!!,
+                        onDismiss = { appState.dismissUpdateDialog() },
+                        onStartUpdate = { apkUrl ->
+                            appState.isDownloadingUpdate = true
+                            appState.updateStatusMessage = "Starting download from GitHub Releases..."
+                            onTriggerUpdate?.invoke(apkUrl, appState.availableUpdate!!.latestVersionName)
+                        },
+                        isDownloading = appState.isDownloadingUpdate,
+                        statusMessage = appState.updateStatusMessage
+                    )
                 }
             }
         }
