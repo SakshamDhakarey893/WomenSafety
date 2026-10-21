@@ -54,6 +54,14 @@ function fallbackClassify(text) {
   };
 }
 
+function getMlBaseUrl() {
+  let baseUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
+  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+    baseUrl = 'http://' + baseUrl;
+  }
+  return baseUrl;
+}
+
 async function classifyEmergencyText(text, context = {}) {
   if (!text || text.trim() === '') {
     return {
@@ -69,60 +77,38 @@ async function classifyEmergencyText(text, context = {}) {
   }
 
   try {
-    const postData = JSON.stringify({
-      text: text.trim(),
-      motion_magnitude: context.motion_magnitude || 0.0,
-      acoustic_stress: context.acoustic_stress || 0.0,
-      zone_risk: context.zone_risk || 50.0,
-      heart_rate_bpm: context.heart_rate_bpm || 75.0
-    });
-    const url = new URL('/predict', ML_SERVICE_URL);
+    const targetUrl = new URL('/predict', getMlBaseUrl()).toString();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-    const options = {
-      hostname: url.hostname,
-      port: url.port || 5001,
-      path: url.pathname,
+    const response = await fetch(targetUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      },
-      timeout: 2000 // 2s timeout
-    };
-
-    return await new Promise((resolve) => {
-      const req = http.request(options, (res) => {
-        let body = '';
-        res.on('data', chunk => { body += chunk; });
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(body);
-            resolve({
-              category: parsed.category || 'Other',
-              confidence: parsed.confidence || 0.85,
-              priority: parsed.priority || PRIORITY_MAPPING[parsed.category] || 'STANDARD',
-              model_used: parsed.model_used || 'Linear SVM (Calibrated)',
-              xai_explanation: parsed.xai_explanation || null,
-              multimodal_assessment: parsed.multimodal_assessment || null
-            });
-          } catch (e) {
-            resolve(fallbackClassify(text));
-          }
-        });
-      });
-
-      req.on('error', () => {
-        resolve(fallbackClassify(text));
-      });
-
-      req.on('timeout', () => {
-        req.destroy();
-        resolve(fallbackClassify(text));
-      });
-
-      req.write(postData);
-      req.end();
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text.trim(),
+        motion_magnitude: context.motion_magnitude || 0.0,
+        acoustic_stress: context.acoustic_stress || 0.0,
+        zone_risk: context.zone_risk || 50.0,
+        heart_rate_bpm: context.heart_rate_bpm || 75.0
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return fallbackClassify(text);
+    }
+
+    const parsed = await response.json();
+    return {
+      category: parsed.category || 'Other',
+      confidence: parsed.confidence || 0.85,
+      priority: parsed.priority || PRIORITY_MAPPING[parsed.category] || 'STANDARD',
+      model_used: parsed.model_used || 'Linear SVM (Calibrated)',
+      xai_explanation: parsed.xai_explanation || null,
+      multimodal_assessment: parsed.multimodal_assessment || null
+    };
   } catch (err) {
     return fallbackClassify(text);
   }
@@ -130,34 +116,23 @@ async function classifyEmergencyText(text, context = {}) {
 
 async function fetchResearchMetrics() {
   try {
-    const url = new URL('/metrics', ML_SERVICE_URL);
-    const options = {
-      hostname: url.hostname,
-      port: url.port || 5001,
-      path: url.pathname,
-      method: 'GET',
-      timeout: 2500
-    };
+    const targetUrl = new URL('/metrics', getMlBaseUrl()).toString();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-    return await new Promise((resolve, reject) => {
-      const req = http.request(options, (res) => {
-        let body = '';
-        res.on('data', chunk => { body += chunk; });
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(body));
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-      req.on('error', reject);
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Timeout'));
-      });
-      req.end();
+    const response = await fetch(targetUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Metrics HTTP error: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (err) {
     // Return mock metrics if ML service offline
     return {

@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
  * Falls back gracefully to offline queuing if network is degraded.
  */
 class SafetyApiClient(
-    var baseUrl: String = "http://10.0.2.2:5000" // 10.0.2.2 for Android Emulator, localhost:5000 for local dev
+    var baseUrl: String = "https://shaktisense-backend.onrender.com" // Live Cloud Production Backend on Render
 ) {
     private val client = HttpClient(CIO) {
         engine {
