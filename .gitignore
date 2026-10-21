@@ -1,0 +1,33 @@
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+
+# Environment secrets
+.env
+backend/.env
+ml-service/.env
+
+# Python caches & build logs
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Raw training datasets (Exceeds GitHub 100MB file limit)
+ml-service/dataset/

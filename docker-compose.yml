@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database Container
+  mongodb:
+    image: mongo:7.0
+    container_name: shaktisense-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=womensafty
+    networks:
+      - shaktisense-net
+
+  # 2. Python ML & NLP Intelligence Microservice
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: shaktisense-ml
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - ENVIRONMENT=production
+    networks:
+      - shaktisense-net
+
+  # 3. Node.js Backend API Gateway & Leaflet Admin Dashboard
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: shaktisense-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/womensafty
+      - ML_SERVICE_URL=http://ml-service:5001
+      - JWT_SECRET=shaktisense-production-secret-jwt-key-2026
+    depends_on:
+      - mongodb
+      - ml-service
+    networks:
+      - shaktisense-net
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  shaktisense-net:
+    driver: bridge

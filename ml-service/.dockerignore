@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+dataset/
+.venv
+venv
+.pytest_cache
+*.png
+*.log

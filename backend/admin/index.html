@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShaktiSense — Admin & Research Intelligence Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="shield-logo">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v5M12 16h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">ShaktiSense <span>AI</span></h1>
+        <p class="brand-subtitle">Explainable Multimodal AI Framework for Women’s Safety</p>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <div class="system-status-pill">
+        <span class="pulse-dot"></span>
+        <span id="systemStatusText">LIVE MONITORING ACTIVE</span>
+      </div>
+      <span class="demo-badge">DEMO MODE ACTIVE</span>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <span id="themeIcon">☀️</span>
+      </button>
+      <button id="refreshBtn" class="btn-refresh">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Sync
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="overview">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      Overview & Alerts
+    </button>
+    <button class="tab-btn" data-tab="research">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 20V10M18 20V4M6 20v-4"/>
+      </svg>
+      NLP / ML Research
+    </button>
+    <button class="tab-btn" data-tab="routes">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+      </svg>
+      Safe Routes & Heatmap
+    </button>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    
+    <!-- TAB 1: OVERVIEW & EMERGENCIES -->
+    <section id="overviewTab" class="tab-content active">
+      <!-- KPI Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Users</span>
+            <span class="stat-icon blue">👥</span>
+          </div>
+          <div class="stat-value" id="kpiTotalUsers">--</div>
+          <div class="stat-sub">Registered safety profiles</div>
+        </div>
+
+        <div class="stat-card urgent">
+          <div class="stat-header">
+            <span class="stat-label">Active Emergencies</span>
+            <span class="stat-icon red pulse">🚨</span>
+          </div>
+          <div class="stat-value" id="kpiActiveAlerts">0</div>
+          <div class="stat-sub" id="kpiActiveSub">Live tracking in progress</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Alerts Handled</span>
+            <span class="stat-icon amber">🛡️</span>
+          </div>
+          <div class="stat-value" id="kpiTotalAlerts">--</div>
+          <div class="stat-sub">Historical incident reports</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Critical Escalations</span>
+            <span class="stat-icon purple">⚡</span>
+          </div>
+          <div class="stat-value" id="kpiCriticalAlerts">--</div>
+          <div class="stat-sub">Assault & Stalking events</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Avg Dispatch Latency</span>
+            <span class="stat-icon green">⏱️</span>
+          </div>
+          <div class="stat-value" id="kpiLatency">138 ms</div>
+          <div class="stat-sub">End-to-end SMS & notification</div>
+        </div>
+      </div>
+
+      <!-- Realtime Incident Monitor & Category Breakdown -->
+      <div class="grid-2col">
+        <!-- Live Alert Feed -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>🔴 Active & Recent Emergency Alerts</h3>
+            <span class="badge live">Real-Time</span>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Location</th>
+                  <th>Model / Conf</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="alertsTableBody">
+                <tr><td colspan="6" class="empty-state">Loading real-time alert data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Emergency Category Distribution -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>📊 Incident Category Breakdown</h3>
+            <span class="badge info">Aggregated</span>
+          </div>
+          <div id="categoryBars" class="category-bars">
+            <!-- Dynamically populated bars -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: NLP / ML RESEARCH DASHBOARD -->
+    <section id="researchTab" class="tab-content">
+      <div class="research-header-banner">
+        <div>
+          <h2>Research Component: NLP Emergency Categorization</h2>
+          <p>Automated feature extraction & prioritized emergency response via <strong>TF-IDF</strong> vectorization comparing <strong>Multinomial Naive Bayes</strong> vs. <strong>Linear Support Vector Machine (Linear SVM)</strong>.</p>
+        </div>
+        <div class="model-badge">
+          <span class="label">Production Classifier</span>
+          <span class="val" id="selectedModelBadge">Linear SVM (Calibrated)</span>
+        </div>
+      </div>
+
+      <!-- Comparison Metrics Grid -->
+      <div class="grid-2col">
+        <!-- Model Comparison Table -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>📈 Model Performance Benchmark (Test Split: 20%)</h3>
+          </div>
+          <div class="table-container">
+            <table class="benchmark-table">
+              <thead>
+                <tr>
+                  <th>Evaluation Metric</th>
+                  <th>Multinomial Naive Bayes</th>
+                  <th>Linear SVM (Calibrated)</th>
+                  <th>Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Accuracy</strong></td>
+                  <td id="nbAccuracy">--</td>
+                  <td id="svmAccuracy" class="highlight-val">--</td>
+                  <td class="badge-win">SVM Best</td>
+                </tr>
+                <tr>
+                  <td><strong>Weighted Precision</strong></td>
+                  <td id="nbPrecision">--</td>
+                  <td id="svmPrecision" class="highlight-val">--</td>
+                  <td class="badge-win">Optimal</td>
+                </tr>
+                <tr>
+                  <td><strong>Weighted Recall</strong></td>
+                  <td id="nbRecall">--</td>
+                  <td id="svmRecall" class="highlight-val">--</td>
+                  <td class="badge-win">Zero Miss</td>
+                </tr>
+                <tr>
+                  <td><strong>Weighted F1-Score</strong></td>
+                  <td id="nbF1">--</td>
+                  <td id="svmF1" class="highlight-val">--</td>
+                  <td class="badge-win">Selected</td>
+                </tr>
+                <tr>
+                  <td><strong>Inference Latency</strong></td>
+                  <td>~4.2 ms</td>
+                  <td class="highlight-val">~14.8 ms</td>
+                  <td>Real-time</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="research-note">
+            <strong>Key Finding:</strong> Linear SVM with TF-IDF unigram + bigram representations effectively isolates high-stakes threat lexicons (e.g. <em>strangle, attack, weapon, bleeding</em>) with higher confidence calibration than standard Naive Bayes independence assumptions.
+          </div>
+        </div>
+
+        <!-- Confusion Matrix Visualizer -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>🎯 Confusion Matrix (Linear SVM)</h3>
+            <span id="matrixBadge" class="badge info">9x9 Multi-class</span>
+          </div>
+          <div class="matrix-axis-guide">
+            <span class="axis-tag"><strong style="color: var(--accent-blue);">Vertical / Rows:</strong> Actual True Class</span>
+            <span class="axis-arrow">➔</span>
+            <span class="axis-tag"><strong style="color: #34d399;">Horizontal / Cols:</strong> Model Prediction</span>
+          </div>
+          <div class="matrix-wrapper">
+            <div id="confusionMatrixContainer">
+              <!-- Dynamically populated confusion matrix heatmap table -->
+            </div>
+          </div>
+          <div id="cmCellDetails" class="cm-details-bar">
+            💡 Hover over any cell to inspect breakdown & error analysis
+          </div>
+          <div class="cm-legend-row">
+            <div class="cm-legend-item">
+              <span class="cm-swatch hit-swatch"></span>
+              <span>Diagonal Correct (95.6% F1)</span>
+            </div>
+            <div class="cm-legend-item">
+              <span class="cm-swatch miss-swatch"></span>
+              <span>Misclassification</span>
+            </div>
+            <div class="cm-legend-item">
+              <span class="cm-swatch zero-swatch"></span>
+              <span>0 Instances</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive ML Tester -->
+      <div class="glass-card mt-4">
+        <div class="card-header">
+          <h3>🧪 Live NLP Emergency Classifier Test Bench</h3>
+          <span class="badge test">Interactive</span>
+        </div>
+        <p class="subtitle">Type or paste any emergency alert text to evaluate real-time NLP classification, confidence score, and priority assignment.</p>
+        <div class="test-bench-form">
+          <input type="text" id="testTextInput" placeholder="e.g., A man in a dark hoodie is following me down the silent alley near metro station" class="test-input">
+          <button id="testPredictBtn" class="btn-primary">Classify Alert</button>
+        </div>
+        <div id="testResultBox" class="result-box hidden">
+          <div class="result-grid">
+            <div>
+              <span class="res-label">Detected Category:</span>
+              <span id="resCategory" class="res-val highlight">--</span>
+            </div>
+            <div>
+              <span class="res-label">Assigned Priority:</span>
+              <span id="resPriority" class="res-val badge-priority">--</span>
+            </div>
+            <div>
+              <span class="res-label">Confidence:</span>
+              <span id="resConfidence" class="res-val">--</span>
+            </div>
+            <div>
+              <span class="res-label">Classifier Engine:</span>
+              <span id="resModel" class="res-val">--</span>
+            </div>
+          </div>
+
+          <!-- Explainable AI (XAI) Attribution Box -->
+          <div class="xai-box" style="margin-top: 14px; padding: 12px; background: rgba(37, 99, 235, 0.08); border-radius: 8px; border-left: 3px solid #2563eb;">
+            <div style="font-weight: 600; font-size: 13px; color: #2563eb; margin-bottom: 6px;">
+              🔍 Explainable AI (XAI) Feature Attribution & Decision Rationale:
+            </div>
+            <p id="resXaiRationale" style="font-size: 13px; margin: 0 0 8px 0;"></p>
+            <div id="resXaiTokens" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+
+          <!-- Multimodal Fusion Assessment Box -->
+          <div class="multimodal-box" style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.08); border-radius: 8px; border-left: 3px solid #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 600; font-size: 13px; color: #10b981;">
+                🌐 Multimodal Threat Fusion Assessment:
+              </span>
+              <span id="resFusedScoreBadge" class="badge win" style="font-size: 11px;">--</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 12px;">
+              <div><strong>Fused Score:</strong> <span id="resFusedScore" style="font-weight: bold;">--</span> / 100</div>
+              <div><strong>Risk Level:</strong> <span id="resRiskLevel">--</span></div>
+              <div><strong>System Action:</strong> <span id="resProactiveAction">--</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SAFE ROUTES & HEATMAP -->
+    <section id="routesTab" class="tab-content">
+      <div class="grid-2col">
+        <!-- Route Comparison Card -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>🧭 Safe Route vs Shortest Route Algorithm</h3>
+            <span class="badge win">42.5% Risk Reduction</span>
+          </div>
+          <p class="subtitle">Compares direct route vs ML-prioritized safer route utilizing historic geotagged alert density and streetlight/surveillance factors.</p>
+
+          <div class="route-comparison-cards">
+            <!-- Route A -->
+            <div class="route-card danger">
+              <div class="route-badge-row">
+                <span class="route-title">Route A (Shortest Route)</span>
+                <span class="risk-badge high">Higher Risk</span>
+              </div>
+              <div class="route-meta">
+                <span>📏 5.2 km</span>
+                <span>⏱️ 18 mins</span>
+                <span>🛡️ Safety: <strong>31.5 / 100</strong></span>
+              </div>
+              <ul class="route-points">
+                <li>⚠️ Passes 2 low-lit railway underpasses</li>
+                <li>⚠️ 12 safety incidents reported in past 30 days</li>
+                <li>⚠️ Sparse bystander density after 9 PM</li>
+              </ul>
+            </div>
+
+            <!-- Route B -->
+            <div class="route-card safe">
+              <div class="route-badge-row">
+                <span class="route-title">Route B (Recommended Safe Route)</span>
+                <span class="risk-badge low">Recommended</span>
+              </div>
+              <div class="route-meta">
+                <span>📏 6.0 km (+0.8 km)</span>
+                <span>⏱️ 19 mins</span>
+                <span>🛡️ Safety: <strong>76.0 / 100</strong></span>
+              </div>
+              <ul class="route-points">
+                <li>✅ Fully illuminated arterial avenues with CCTV</li>
+                <li>✅ Continuous police patrol coverage & women booth</li>
+                <li>✅ 64% lower incident density compared to Route A</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety Zones List -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>🗺️ Area Safety Zones & Risk Levels</h3>
+            <span class="badge info">Dynamic Scores</span>
+          </div>
+          <div id="safetyZonesList" class="zones-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Geospatial Map & Live Heatmap -->
+      <div class="glass-card mt-4">
+        <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3>🗺️ Interactive Geospatial Safety Map & Real-Time Incident Tracker</h3>
+            <span class="pulse-dot"></span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">🟢 Route B: Recommended Safe (76.0)</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">🔴 Route A: Hazardous (31.5)</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.3);">🛡️ Police & Women Booths</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: rgba(225, 29, 72, 0.15); color: #e11d48; border: 1px solid rgba(225, 29, 72, 0.3);">🚨 Live Emergency Geotag</span>
+          </div>
+        </div>
+        <div id="safetyMapContainer" class="safety-map-container"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>ShaktiSense Framework — Research & Production Architecture | Kotlin Multiplatform (Android & iOS) + Node.js + Python ML</p>
+    <p class="disclaimer">Demo Mode Active. Safety scores and classifications are algorithmic aids and not guarantees of physical protection.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# Render.com Infrastructure-as-Code Blueprint
+services:
+  # 1. Python ML & NLP Intelligence Microservice
+  - type: web
+    name: shaktisense-ml
+    runtime: python
+    rootDir: ml-service
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 app:app
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11.8
+
+  # 2. Node.js Backend API Gateway & Leaflet Admin Dashboard
+  - type: web
+    name: shaktisense-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: shaktisense-ml
+          property: host
