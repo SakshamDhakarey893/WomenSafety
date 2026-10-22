@@ -34,3 +34,7 @@ ml-service/dataset/
 
 # Release binaries
 *.apk
+
+# Heavy model weights (>100MB GitHub limit)
+*.safetensors
+*.bin

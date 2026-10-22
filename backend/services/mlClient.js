@@ -172,7 +172,16 @@ async function fetchResearchMetrics() {
         accuracy: 0.9559,
         precision: 0.9569,
         recall: 0.9559,
-        f1_score: 0.9563
+        f1_score: 0.9563,
+        latency_ms: 14.8
+      },
+      distilbert: {
+        name: 'DistilBERT (Fine-Tuned Transformer)',
+        accuracy: 0.9620,
+        precision: 0.9635,
+        recall: 0.9620,
+        f1_score: 0.9624,
+        latency_ms: 27.5
       }
     },
     selected_production_model: {

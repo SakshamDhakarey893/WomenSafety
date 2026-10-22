@@ -1,0 +1,49 @@
+{
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForSequenceClassification"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "dtype": "float32",
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "id2label": {
+    "0": "Physical Assault",
+    "1": "Stalking/Following",
+    "2": "Kidnapping/Detainment",
+    "3": "Harassment",
+    "4": "Theft/Snatching",
+    "5": "Medical Emergency",
+    "6": "Unsafe Environment",
+    "7": "False Alarm",
+    "8": "Other"
+  },
+  "initializer_range": 0.02,
+  "label2id": {
+    "False Alarm": 7,
+    "Harassment": 3,
+    "Kidnapping/Detainment": 2,
+    "Medical Emergency": 5,
+    "Other": 8,
+    "Physical Assault": 0,
+    "Stalking/Following": 1,
+    "Theft/Snatching": 4,
+    "Unsafe Environment": 6
+  },
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "problem_type": "single_label_classification",
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.20.2",
+  "vocab_size": 30522
+}

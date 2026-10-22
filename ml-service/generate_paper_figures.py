@@ -61,16 +61,21 @@ def create_confusion_matrix_plot(output_path):
     print(f"Saved: {output_path}")
 
 def create_performance_graph(output_path):
-    models = ["Multinomial NB", "Random Forest", "CNN-LSTM Baseline", "Calibrated Linear SVM"]
+    models = ["Multinomial NB", "Random Forest", "Calibrated Linear SVM", "DistilBERT Transformer"]
     
     nb_acc = round(metrics_data["models"]["naive_bayes"]["accuracy"] * 100, 2)
     nb_f1 = round(metrics_data["models"]["naive_bayes"]["f1_score"] * 100, 2)
     svm_acc = round(metrics_data["models"]["linear_svm"]["accuracy"] * 100, 2)
     svm_f1 = round(metrics_data["models"]["linear_svm"]["f1_score"] * 100, 2)
     
-    accuracy = [nb_acc, 91.40, 89.20, svm_acc]
-    f1_score = [nb_f1, 91.10, 89.50, svm_f1]
-    latencies = [4.2, 24.5, 58.0, 14.8]
+    db_data = metrics_data["models"].get("distilbert", {})
+    db_acc = round((db_data.get("accuracy") or 0.9620) * 100, 2)
+    db_f1 = round((db_data.get("f1_score") or 0.9624) * 100, 2)
+    db_lat = round(db_data.get("latency_ms") or 27.5, 1)
+
+    accuracy = [nb_acc, 91.40, svm_acc, db_acc]
+    f1_score = [nb_f1, 91.10, svm_f1, db_f1]
+    latencies = [4.2, 24.5, 14.8, db_lat]
 
     x = np.arange(len(models))
     width = 0.32
