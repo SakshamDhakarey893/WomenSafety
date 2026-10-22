@@ -77,9 +77,40 @@ class AppState(private val scope: CoroutineScope) {
     var isOfflineMode by mutableStateOf(false)
     var offlineQueueCount by mutableStateOf(0)
 
-    // Shake & Voice Detection
+    // Hardware Sensors: Accelerometer & Motion Telemetry
+    var currentMotionMagnitude by mutableStateOf(1.0f) // 1.0g = Earth gravity baseline
+    var motionAnomalyLevel by mutableStateOf("NORMAL") // "NORMAL", "ELEVATED", "SHAKE_DETECTED", "IMPACT_FALL"
     var shakeCountDetected by mutableStateOf(0)
+
+    // Hardware Sensors: Microphone & Acoustic Telemetry
+    var currentAcousticStress by mutableStateOf(0.12f) // 0.0 - 1.0 scale
+    var acousticStressCategory by mutableStateOf("CALM") // "CALM", "CONVERSATIONAL", "ELEVATED", "SCREAM_DISTRESS"
     var isVoiceListening by mutableStateOf(false)
+    var isMicrophoneActive by mutableStateOf(false)
+
+    fun updateMotionTelemetry(gForce: Float) {
+        currentMotionMagnitude = (currentMotionMagnitude * 0.7f) + (gForce * 0.3f)
+        motionAnomalyLevel = when {
+            gForce > 2.8f -> "IMPACT_FALL"
+            gForce > 2.0f -> "SHAKE_DETECTED"
+            gForce > 1.4f -> "ELEVATED"
+            else -> "NORMAL"
+        }
+    }
+
+    fun updateAcousticTelemetry(stressLevel: Float) {
+        currentAcousticStress = (currentAcousticStress * 0.6f) + (stressLevel * 0.4f)
+        acousticStressCategory = when {
+            currentAcousticStress > 0.75f -> "SCREAM_DISTRESS"
+            currentAcousticStress > 0.45f -> "ELEVATED"
+            currentAcousticStress > 0.20f -> "CONVERSATIONAL"
+            else -> "CALM"
+        }
+        // Auto-trigger emergency if screaming persists when Voice SOS is enabled
+        if (settings.voiceSosEnabled && currentAcousticStress > 0.85f && !isEmergencyActive && !isCountingDown) {
+            triggerSos(immediate = true, description = "Acoustic Scream Distress Detected (>85dB)")
+        }
+    }
 
     // Disguised Fake Call State
     var isFakeCallActive by mutableStateOf(false)
@@ -315,8 +346,8 @@ class AppState(private val scope: CoroutineScope) {
                 description = newAlert.description,
                 accuracy = currentGpsAccuracy,
                 address = currentAddress,
-                motionMagnitude = if (shakeCountDetected > 0) 2.6f else 0.2f,
-                acousticStress = if (isVoiceListening) 0.8f else 0.1f,
+                motionMagnitude = maxOf(currentMotionMagnitude, if (shakeCountDetected > 0) 2.6f else 0.2f),
+                acousticStress = maxOf(currentAcousticStress, if (isVoiceListening) 0.8f else 0.1f),
                 heartRateBpm = 85.0f
             )
 

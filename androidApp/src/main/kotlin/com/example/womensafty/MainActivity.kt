@@ -1,5 +1,7 @@
 package com.example.womensafty
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -9,8 +11,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.womensafty.sensor.AudioStressMonitor
 import com.example.womensafty.state.AppState
 import com.example.womensafty.update.AppUpdateManager
 import kotlinx.coroutines.CoroutineScope
@@ -25,12 +29,22 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private val appScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var appState: AppState
     private lateinit var updateManager: AppUpdateManager
+    private lateinit var audioStressMonitor: AudioStressMonitor
+
+    private val recordAudioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            audioStressMonitor.startMonitoring()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         appState = AppState(appScope)
         updateManager = AppUpdateManager(this)
+        audioStressMonitor = AudioStressMonitor(this, appState, appScope)
 
         // Retrieve current installed build version code
         val currentVersionCode = try {
@@ -51,6 +65,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as? SensorManager
         accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+        // Initialize Live Microphone Audio Stress Sentinel
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            audioStressMonitor.startMonitoring()
+        } else {
+            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+
         setContent {
             App(
                 providedAppState = appState,
@@ -68,11 +89,15 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         accelerometer?.let {
             sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
         }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            audioStressMonitor.startMonitoring()
+        }
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager?.unregisterListener(this)
+        audioStressMonitor.stopMonitoring()
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -86,6 +111,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             val gY = y / SensorManager.GRAVITY_EARTH
             val gZ = z / SensorManager.GRAVITY_EARTH
             val gForce = sqrt(gX * gX + gY * gY + gZ * gZ)
+
+            // Feed continuous physical telemetry into AppState
+            appState.updateMotionTelemetry(gForce)
 
             // Trigger shake SOS when physical threshold exceeded (> 2.4g)
             if (gForce > 2.4f) {

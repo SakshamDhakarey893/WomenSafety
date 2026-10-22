@@ -72,7 +72,71 @@ fun HomeScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Live Hardware Sensor Telemetry HUD (Accelerometer + Microphone)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Accelerometer telemetry
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "📳", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Column {
+                        Text(
+                            text = "MOTION G-FORCE",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val motionColor = if (appState.currentMotionMagnitude > 2.0f) Color(0xFFE11D48) else if (appState.currentMotionMagnitude > 1.3f) Color(0xFFF59E0B) else Color(0xFF10B981)
+                        val displayG = ((appState.currentMotionMagnitude * 100).toInt()) / 100.0
+                        Text(
+                            text = "${displayG}g • ${appState.motionAnomalyLevel}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = motionColor
+                        )
+                    }
+                }
+
+                // Vertical Divider
+                Box(modifier = Modifier.height(28.dp).width(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
+
+                // Acoustic Stress telemetry
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🎙️", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Column {
+                        Text(
+                            text = "ACOUSTIC STRESS",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val acousticColor = if (appState.currentAcousticStress > 0.7f) Color(0xFFE11D48) else if (appState.currentAcousticStress > 0.35f) Color(0xFFF59E0B) else Color(0xFF10B981)
+                        Text(
+                            text = "${(appState.currentAcousticStress * 100).toInt()}% • ${appState.acousticStressCategory}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = acousticColor
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Large SOS Emergency Button with Ripple Animation
         SosButton(
