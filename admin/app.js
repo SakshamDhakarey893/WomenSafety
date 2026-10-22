@@ -77,6 +77,7 @@ function setupRefresh() {
   const icon = document.getElementById('refreshBtnIcon');
   const text = document.getElementById('refreshBtnText');
   const pill = document.getElementById('lastSyncPill');
+  const mobilePill = document.getElementById('mobileLastSyncPill');
 
   if (!btn) return;
 
@@ -97,6 +98,7 @@ function setupRefresh() {
       const elapsed = Date.now() - startTime;
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       if (pill) pill.textContent = `Synced: ${timeStr}`;
+      if (mobilePill) mobilePill.textContent = `Synced: ${timeStr}`;
       showToast(`Telemetry synchronized successfully (${elapsed}ms)`, 'success');
     } catch (err) {
       showToast('Telemetry updated with resilient local baseline', 'info');
@@ -106,6 +108,16 @@ function setupRefresh() {
         if (text) text.textContent = 'Sync';
         btn.disabled = false;
       }, 400);
+    }
+  });
+
+  // Responsive map resize observer
+  window.addEventListener('resize', () => {
+    if (typeof safetyMap !== 'undefined' && safetyMap) {
+      clearTimeout(window._mapResizeTimer);
+      window._mapResizeTimer = setTimeout(() => {
+        safetyMap.invalidateSize();
+      }, 150);
     }
   });
 }
