@@ -36,6 +36,20 @@ const localAdminPath = path.join(__dirname, 'admin');
 const adminPath = fs.existsSync(rootAdminPath) ? rootAdminPath : localAdminPath;
 app.use('/admin', express.static(adminPath));
 
+// Serve public Live Emergency Tracking Portal (zero-install for emergency contacts)
+const rootTrackPath = path.join(__dirname, '..', 'public', 'track');
+const localTrackPath = path.join(__dirname, 'public', 'track');
+const trackPath = fs.existsSync(rootTrackPath) ? rootTrackPath : localTrackPath;
+app.use('/track', express.static(trackPath));
+app.get('/track/:id', (req, res) => {
+  const indexFile = path.join(trackPath, 'index.html');
+  if (fs.existsSync(indexFile)) {
+    res.sendFile(indexFile);
+  } else {
+    res.redirect('/admin');
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
@@ -85,6 +99,14 @@ app.use('/api/users', authRouter); // Alias for compatibility
 
 // 2. Emergency Alert Routes
 const alertRouter = express.Router();
+
+// Public Tracking & Responder Endpoints (No Auth Required for SMS recipients)
+alertRouter.get('/:id/track', AlertController.getPublicTrackingData);
+alertRouter.post('/:id/respond', AlertController.respondToAlert);
+app.get('/api/track/:id', AlertController.getPublicTrackingData);
+app.post('/api/track/:id/respond', AlertController.respondToAlert);
+
+// Authenticated dispatch & user operations
 alertRouter.post('/', authenticateToken, AlertController.createAlert);
 alertRouter.get('/history', authenticateToken, AlertController.getHistory);
 alertRouter.get('/:id', authenticateToken, AlertController.getAlertById);

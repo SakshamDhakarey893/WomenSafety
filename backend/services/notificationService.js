@@ -6,7 +6,8 @@ class NotificationService {
    */
   static async notifyContacts(alert, contacts, user, isDemoMode = true) {
     const notificationsSent = [];
-    const trackingLink = `https://safe-track.womensafty.app/live/${alert._id || alert.id}`;
+    const baseUrl = process.env.PUBLIC_APP_URL || process.env.BASE_URL || 'http://127.0.0.1:5000';
+    const trackingLink = `${baseUrl}/track/${alert._id || alert.id}`;
 
     const emergencySmsTemplate = (contact) => 
       `EMERGENCY ALERT from ${user.name || 'Your contact'}!\n` +

@@ -274,6 +274,37 @@ async function runTests() {
     }
   });
 
+  // 5b. Public Live Web Tracking (Zero-Install Family Locator)
+  await assertTest('Public Live Tracking Telemetry (Zero Auth Required)', async () => {
+    const res = await request(`${BACKEND_BASE}/api/track/${testAlertId}`);
+    if (res.status !== 200 || !res.data.alert || typeof res.data.alert.latitude !== 'number') {
+      throw new Error(`Public tracking retrieval failed: ${JSON.stringify(res.data)}`);
+    }
+    if (res.data.alert.battery === undefined || res.data.alert.speed === undefined) {
+      throw new Error(`Missing battery/speed telemetry: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  await assertTest('Public Family Responder Broadcast En Route', async () => {
+    const res = await request(`${BACKEND_BASE}/api/track/${testAlertId}/respond`, 'POST', {
+      responderName: 'Arun Sen (Father)',
+      responderPhone: '+91 98765 43210',
+      etaMinutes: 10,
+      note: 'Driving towards incident location now'
+    });
+
+    if (res.status !== 200 || !res.data.success || !res.data.responder) {
+      throw new Error(`Responder broadcast failed: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  await assertTest('Public Tracking Web Portal Static Viewport (HTML Delivery)', async () => {
+    const res = await request(`${BACKEND_BASE}/track/${testAlertId}`);
+    if (res.status !== 200 || typeof res.data !== 'string' || !res.data.includes('SHAKTISENSE')) {
+      throw new Error(`Tracking HTML failed to render properly (status: ${res.status})`);
+    }
+  });
+
   await assertTest('Mark Emergency Alert as Resolved via Dispatch Action', async () => {
     const res = await request(`${BACKEND_BASE}/api/alerts/${testAlertId}/resolve`, 'POST', {
       reason: 'Resolved by emergency dispatch triage team'

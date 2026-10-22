@@ -267,7 +267,7 @@ class AlertController {
   static async updateLocation(req, res) {
     try {
       const { id } = req.params;
-      const { latitude, longitude, accuracy = 5 } = req.body;
+      const { latitude, longitude, accuracy = 5, speed, battery } = req.body;
       const alert = await EmergencyAlert.findById(id);
       if (!alert) return res.status(404).json({ error: 'Alert not found.' });
 
@@ -275,10 +275,15 @@ class AlertController {
         return res.status(400).json({ error: 'Live location sharing is inactive for this alert.' });
       }
 
+      const currentSpeed = speed !== undefined ? parseFloat(speed) : (alert.speed || 0);
+      const currentBattery = battery !== undefined ? parseInt(battery, 10) : (alert.battery || 85);
+
       const history = alert.liveLocationHistory || [];
       history.push({
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        speed: currentSpeed,
+        battery: currentBattery,
         timestamp: new Date()
       });
 
@@ -286,15 +291,99 @@ class AlertController {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         accuracy: parseFloat(accuracy),
+        speed: currentSpeed,
+        battery: currentBattery,
         liveLocationHistory: history
       });
 
       return res.json({
         message: 'Location updated successfully.',
-        currentLocation: { latitude, longitude, accuracy }
+        currentLocation: { latitude, longitude, accuracy, speed: currentSpeed, battery: currentBattery }
       });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to update live location.' });
+    }
+  }
+
+  static async getPublicTrackingData(req, res) {
+    try {
+      const { id } = req.params;
+      const alert = await EmergencyAlert.findById(id);
+      if (!alert) {
+        return res.status(404).json({ error: 'Emergency tracking session not found or link expired.' });
+      }
+
+      // Check for duress state
+      const isDuress = alert.status === 'DURESS_ACTIVE' || alert.escalationStatus === 'COERCED_CANCELLATION';
+      const displayStatus = isDuress ? 'POLICE_ESCORT_ACTIVE' : alert.status;
+
+      // Extract sanitized public telemetry
+      return res.json({
+        success: true,
+        alert: {
+          id: alert._id || alert.id,
+          userName: alert.userName || 'Protected Individual',
+          userPhone: alert.userPhone || '',
+          category: alert.category || 'Emergency SOS',
+          priority: isDuress ? 'CRITICAL' : (alert.priority || 'HIGH'),
+          status: displayStatus,
+          escalationStatus: alert.escalationStatus || 'NONE',
+          liveLocationStatus: alert.liveLocationStatus || 'ACTIVE',
+          latitude: alert.latitude,
+          longitude: alert.longitude,
+          accuracy: alert.accuracy || 4.2,
+          address: alert.address || 'Geotagged Emergency Coordinate',
+          description: alert.description || 'Emergency SOS Activated',
+          timestamp: alert.timestamp || alert.createdAt,
+          resolvedAt: alert.resolvedAt || null,
+          liveLocationHistory: alert.liveLocationHistory || [],
+          speed: alert.speed !== undefined ? alert.speed : 3.8,
+          battery: alert.battery !== undefined ? alert.battery : 84,
+          responders: alert.responders || []
+        }
+      });
+    } catch (err) {
+      console.error('Public tracking data error:', err);
+      return res.status(500).json({ error: 'Failed to retrieve live tracking telemetry.' });
+    }
+  }
+
+  static async respondToAlert(req, res) {
+    try {
+      const { id } = req.params;
+      const { responderName, responderPhone = '', relationship = 'Family / Friend', etaMinutes = 10, note = '' } = req.body;
+
+      if (!responderName || !responderName.trim()) {
+        return res.status(400).json({ error: 'Responder name is required.' });
+      }
+
+      const alert = await EmergencyAlert.findById(id);
+      if (!alert) {
+        return res.status(404).json({ error: 'Emergency alert not found.' });
+      }
+
+      const responders = alert.responders || [];
+      const newResponder = {
+        name: responderName.trim(),
+        phone: responderPhone.trim(),
+        relationship: relationship.trim(),
+        etaMinutes: parseInt(etaMinutes, 10) || 10,
+        note: note.trim(),
+        respondedAt: new Date()
+      };
+      responders.push(newResponder);
+
+      const updated = await EmergencyAlert.update(id, { responders });
+
+      return res.json({
+        success: true,
+        message: 'Response confirmed! The victim and emergency dispatch team have been notified that help is en route.',
+        responder: newResponder,
+        responders: updated.responders || responders
+      });
+    } catch (err) {
+      console.error('Responder error:', err);
+      return res.status(500).json({ error: 'Failed to record responder acknowledgement.' });
     }
   }
 

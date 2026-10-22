@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ShaktiSense AI — Live Emergency SOS Tracking Portal</title>
+  <meta name="description" content="Zero-install real-time emergency tracking portal for trusted family contacts, guardians, and emergency responders.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for Interactive OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Portal Stylesheet -->
+  <link rel="stylesheet" href="/track/styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="track-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-shield">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M12 8v4M12 16h.01" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="portal-title">SHAKTISENSE</h1>
+          <span class="portal-sub">EMERGENCY RESCUE DISPATCH TRACKER</span>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div class="live-beacon">
+          <span class="pulse-ring"></span>
+          <span class="beacon-dot"></span>
+          <span id="headerLiveStatus">LIVE TRACKING ACTIVE</span>
+        </div>
+        <button id="themeToggleBtn" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+          <span id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Emergency Alert Banner -->
+  <div id="emergencyBanner" class="emergency-banner">
+    <div class="banner-inner">
+      <div class="banner-icon-box">
+        <span class="banner-siren">🚨</span>
+      </div>
+      <div class="banner-text">
+        <div class="banner-title-row">
+          <span class="banner-urgent-tag">CRITICAL ALERT</span>
+          <span id="alertTimeAgo" class="time-ago">Triggered just now</span>
+        </div>
+        <p id="bannerMainText" class="banner-desc">
+          Emergency SOS initiated by <strong id="victimNameDisplay">Rhea Sen</strong>. Live GPS coordinates and movement trail are actively being streamed to trusted contacts.
+        </p>
+      </div>
+      <div class="banner-actions">
+        <button id="openRespondModalBtn" class="btn-respond">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+          <span>I Am Responding</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="portal-main">
+
+    <!-- Primary Map Viewport Container -->
+    <div class="map-section glass-card">
+      <div class="map-hud-top">
+        <div class="hud-status-badge">
+          <span id="hudStatusDot" class="hud-dot"></span>
+          <span id="hudStatusText">STREAMING GPS TELEMETRY</span>
+        </div>
+        <div class="hud-controls">
+          <button id="recenterBtn" class="hud-btn" title="Center map on victim's current position">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+            </svg>
+            <span>Recenter</span>
+          </button>
+          <button id="openGoogleMapsBtn" class="hud-btn highlight" title="Get direct turn-by-turn navigation in Google Maps">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+            <span>Google Maps</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Leaflet Map Canvas -->
+      <div id="liveTrackingMap" class="map-viewport"></div>
+
+      <!-- Floating Map Bottom Telemetry HUD -->
+      <div class="map-hud-bottom">
+        <div class="telemetry-chip">
+          <span class="chip-label">BATTERY</span>
+          <div class="chip-val-group">
+            <span class="battery-icon">🔋</span>
+            <span id="telemetryBattery" class="chip-val">88%</span>
+          </div>
+        </div>
+
+        <div class="telemetry-chip">
+          <span class="chip-label">SPEED</span>
+          <div class="chip-val-group">
+            <span id="telemetrySpeed" class="chip-val">3.6 km/h</span>
+            <span id="telemetrySpeedSub" class="chip-sub">(Walking)</span>
+          </div>
+        </div>
+
+        <div class="telemetry-chip">
+          <span class="chip-label">ACCURACY</span>
+          <div class="chip-val-group">
+            <span id="telemetryAccuracy" class="chip-val">± 4.2m</span>
+            <span class="chip-sub">High Fix</span>
+          </div>
+        </div>
+
+        <div class="telemetry-chip">
+          <span class="chip-label">SIGNAL</span>
+          <div class="chip-val-group">
+            <span id="telemetryPing" class="chip-val">4s ago</span>
+            <span class="chip-sub">Active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side Information & Emergency Action Column -->
+    <div class="sidebar-section">
+
+      <!-- Victim Profile & Incident Summary Card -->
+      <div class="glass-card info-card">
+        <div class="card-header">
+          <div class="user-capsule">
+            <div class="user-avatar" id="victimAvatar">RS</div>
+            <div>
+              <h2 id="victimNameHeading" class="victim-name">Rhea Sen</h2>
+              <span id="victimPhoneHeading" class="victim-phone">+91 99887 76655</span>
+            </div>
+          </div>
+          <span id="priorityPill" class="prio-tag critical">CRITICAL</span>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail-row">
+            <span class="detail-label">Incident Category</span>
+            <span id="incidentCategory" class="detail-value highlight-red">Stalking / Following</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Current Address</span>
+            <span id="incidentAddress" class="detail-value">Determining exact address...</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Coordinates</span>
+            <span id="incidentCoords" class="detail-value font-mono">28.6139, 77.2090</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Dispatch Status</span>
+            <span id="escalationStatusText" class="detail-value highlight-green">POLICE DISPATCHED (112)</span>
+          </div>
+        </div>
+
+        <!-- Direct Emergency Action Buttons -->
+        <div class="emergency-action-grid">
+          <a id="callVictimBtn" href="tel:+919988776655" class="action-btn call-victim">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>Call Victim</span>
+          </a>
+
+          <a href="tel:112" class="action-btn call-police">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Call Police 112</span>
+          </a>
+
+          <a href="tel:108" class="action-btn call-ambulance">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="2" y="7" width="20" height="13" rx="2"/>
+              <path d="M12 10v6M9 13h6"/>
+            </svg>
+            <span>Ambulance 108</span>
+          </a>
+
+          <a href="tel:1091" class="action-btn call-helpline">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            <span>Women 1091</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Active Responders Card -->
+      <div class="glass-card responders-card">
+        <div class="card-header-simple">
+          <h3>🛡️ Confirmed Responders En Route</h3>
+          <span id="responderCountBadge" class="count-badge">0 Responding</span>
+        </div>
+        <div id="respondersList" class="responders-list">
+          <div class="empty-responders">
+            <p>No family responders confirmed yet.</p>
+            <button id="confirmFirstRespondBtn" class="btn-link">Are you on your way? Click to notify family</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Emergency Event Timeline -->
+      <div class="glass-card timeline-card">
+        <div class="card-header-simple">
+          <h3>⏱️ Emergency Telemetry Log</h3>
+          <span class="live-pill">LIVE AUDIT</span>
+        </div>
+        <div id="auditTimeline" class="audit-timeline">
+          <!-- Dynamically populated events -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Responder Modal -->
+  <div id="responderModal" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3>🛡️ Confirm Emergency Response</h3>
+          <p class="modal-sub">Notify the victim, other guardians, and dispatch that you are on your way.</p>
+        </div>
+        <button id="closeModalBtn" class="btn-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="responderForm" class="modal-form">
+        <div class="form-group">
+          <label for="respNameInput">Your Name & Relationship *</label>
+          <input type="text" id="respNameInput" required placeholder="e.g. Arun Sen (Father)">
+        </div>
+
+        <div class="form-group">
+          <label for="respPhoneInput">Your Contact Phone *</label>
+          <input type="tel" id="respPhoneInput" required placeholder="e.g. +91 98765 43210">
+        </div>
+
+        <div class="form-group">
+          <label for="respEtaSelect">Estimated Arrival Time (ETA)</label>
+          <select id="respEtaSelect">
+            <option value="5">Within 5 minutes</option>
+            <option value="10" selected>Within 10 minutes</option>
+            <option value="15">Within 15 minutes</option>
+            <option value="30">Within 30 minutes</option>
+            <option value="60">Over 30 minutes</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="respNoteInput">Rescue Note (Optional)</label>
+          <input type="text" id="respNoteInput" placeholder="e.g. Driving silver Swift, approaching South Gate">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelModalBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" id="submitRespondBtn" class="btn-primary-urgent">
+            <span>Broadcast My Response</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Capsule -->
+  <div id="trackToast" class="track-toast hidden" role="status"></div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Portal Application Logic -->
+  <script src="/track/track.js"></script>
+</body>
+</html>

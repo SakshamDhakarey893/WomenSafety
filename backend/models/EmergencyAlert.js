@@ -49,7 +49,19 @@ const EmergencyAlertSchema = new mongoose.Schema({
   liveLocationHistory: [{
     latitude: Number,
     longitude: Number,
+    speed: { type: Number, default: 0 },
+    battery: { type: Number, default: 85 },
     timestamp: { type: Date, default: Date.now }
+  }],
+  battery: { type: Number, default: 85 },
+  speed: { type: Number, default: 0 },
+  responders: [{
+    name: String,
+    phone: String,
+    relationship: String,
+    etaMinutes: Number,
+    note: String,
+    respondedAt: { type: Date, default: Date.now }
   }],
   notifiedContacts: [{
     name: String,
@@ -79,9 +91,14 @@ class AlertRepository {
     const alert = {
       _id: id,
       id: id,
+      battery: data.battery !== undefined ? data.battery : 88,
+      speed: data.speed !== undefined ? data.speed : 0,
+      responders: data.responders || [],
       liveLocationHistory: [{
         latitude: data.latitude,
         longitude: data.longitude,
+        speed: data.speed || 0,
+        battery: data.battery || 88,
         timestamp: new Date()
       }],
       notifiedContacts: [],
