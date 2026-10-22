@@ -16,6 +16,8 @@ const RouteController = require('./controllers/routeController');
 const NearbyController = require('./controllers/nearbyController');
 const AdminController = require('./controllers/adminController');
 const { classifyEmergencyText } = require('./services/mlClient');
+const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -62,6 +64,20 @@ authRouter.post('/register', AuthController.register);
 authRouter.post('/login', AuthController.login);
 authRouter.post('/forgot-password', AuthController.forgotPassword);
 authRouter.get('/profile', authenticateToken, AuthController.getProfile);
+authRouter.get('/admin-check', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied: Administrator privileges required.' });
+  }
+  return res.json({
+    ok: true,
+    user: {
+      id: req.user._id || req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
 authRouter.put('/profile', authenticateToken, AuthController.updateProfile);
 authRouter.post('/logout', (req, res) => res.json({ message: 'Logged out successfully.' }));
 app.use('/api/auth', authRouter);
@@ -124,9 +140,36 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error.' });
 });
 
+// Pre-seed default Admin Account if not already present
+async function seedDefaultAdmin() {
+  try {
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@shaktisense.org').toLowerCase().trim();
+    const existing = await User.findOne({ email: adminEmail });
+    if (!existing) {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@123', salt);
+      await User.create({
+        name: 'System Administrator',
+        email: adminEmail,
+        phone: '+91 9900000000',
+        passwordHash,
+        role: 'admin',
+        demoMode: true
+      });
+      console.log(`[Auth] Default admin account seeded: ${adminEmail} / Admin@123`);
+    } else if (existing.role !== 'admin') {
+      await User.update(existing._id || existing.id, { role: 'admin' });
+      console.log(`[Auth] Existing user promoted to admin role: ${adminEmail}`);
+    }
+  } catch (err) {
+    console.warn('[Auth] Admin seeding notice:', err.message);
+  }
+}
+
 // Initialize DB and start server
 async function start() {
   await connectDB();
+  await seedDefaultAdmin();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[ShaktiSense API] Server running at http://127.0.0.1:${PORT}`);
     console.log(`[Admin Dashboard] Available at http://127.0.0.1:${PORT}/admin`);

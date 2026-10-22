@@ -82,8 +82,11 @@ function initDefaultData() {
   defaultZones.forEach(z => memoryStore.zones.set(z._id, z));
 }
 
+// Pre-initialize in-memory defaults on load for immediate resilience
+initDefaultData();
+
 function isMemoryMode() {
-  return memoryStoreMode;
+  return memoryStoreMode || !isConnected || mongoose.connection.readyState !== 1;
 }
 
 function getMemoryStore() {

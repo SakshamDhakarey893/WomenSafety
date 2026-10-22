@@ -31,3 +31,6 @@ __pycache__/
 
 # Raw training datasets (Exceeds GitHub 100MB file limit)
 ml-service/dataset/
+
+# Release binaries
+*.apk
