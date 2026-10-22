@@ -1,10 +1,11 @@
 let API_BASE = window.location.origin;
-if (!API_BASE || API_BASE.startsWith('file:') || API_BASE.includes(':5500') || API_BASE.includes(':3000')) {
+if (!API_BASE || API_BASE === 'null' || API_BASE.startsWith('file:') || !API_BASE.includes(':5000')) {
   API_BASE = 'http://127.0.0.1:5000';
 }
 
 let currentAdmin = null;
 let toastTimeout = null;
+let isBackendOnline = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
@@ -12,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setupRefresh();
   setupTestBench();
   setupAuthGateway();
+
+  // Initial gateway connectivity verification
+  checkBackendConnectivity();
 
   // Validate or restore admin session
   checkAdminAuth();
@@ -28,6 +32,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 10000);
 });
+
+/* Gateway Connectivity & Offline Banner Manager */
+async function checkBackendConnectivity() {
+  const banner = document.getElementById('offlineStatusBanner');
+  const bannerMsg = document.getElementById('offlineBannerMsg');
+  const targetUrlEl = document.getElementById('offlineTargetUrl');
+  const statusText = document.getElementById('systemStatusText');
+  const pulseDot = document.querySelector('.pulse-dot');
+
+  if (targetUrlEl) targetUrlEl.textContent = API_BASE;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${API_BASE}/health`, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      isBackendOnline = true;
+      if (banner) banner.classList.add('hidden');
+      if (statusText) statusText.textContent = 'LIVE MONITORING ACTIVE';
+      if (pulseDot) {
+        pulseDot.style.background = '#10b981';
+        pulseDot.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.6)';
+      }
+      return true;
+    } else {
+      throw new Error(`Health HTTP ${res.status}`);
+    }
+  } catch (err) {
+    isBackendOnline = false;
+    if (banner) banner.classList.remove('hidden');
+    if (bannerMsg) {
+      bannerMsg.innerHTML = `Unable to connect to live API at <code>${escapeHtml(API_BASE)}</code>. Running in offline fallback mode with local baseline telemetry.`;
+    }
+    if (statusText) statusText.textContent = 'BACKEND DISCONNECTED';
+    if (pulseDot) {
+      pulseDot.style.background = '#f59e0b';
+      pulseDot.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.6)';
+    }
+    return false;
+  }
+}
 
 /* Tabs */
 function setupTabs() {
@@ -78,6 +125,22 @@ function setupRefresh() {
   const text = document.getElementById('refreshBtnText');
   const pill = document.getElementById('lastSyncPill');
   const mobilePill = document.getElementById('mobileLastSyncPill');
+  const retryBtn = document.getElementById('retryConnectionBtn');
+
+  if (retryBtn) {
+    retryBtn.addEventListener('click', async () => {
+      retryBtn.disabled = true;
+      showToast('Re-probing backend gateway...', 'info');
+      const online = await checkBackendConnectivity();
+      if (online) {
+        showToast('✅ System data synchronized', 'success');
+        await Promise.all([loadOverviewData(true), loadResearchData(), loadSafetyZones()]);
+      } else {
+        showToast('⚠️ Backend disconnected', 'error');
+      }
+      retryBtn.disabled = false;
+    });
+  }
 
   if (!btn) return;
 
@@ -87,7 +150,9 @@ function setupRefresh() {
     if (icon) icon.classList.add('spinning');
     if (text) text.textContent = 'Syncing...';
 
-    const startTime = Date.now();
+    const online = await checkBackendConnectivity();
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     try {
       await Promise.all([
         loadOverviewData(true),
@@ -95,13 +160,18 @@ function setupRefresh() {
         loadSafetyZones()
       ]);
 
-      const elapsed = Date.now() - startTime;
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      if (pill) pill.textContent = `Synced: ${timeStr}`;
-      if (mobilePill) mobilePill.textContent = `Synced: ${timeStr}`;
-      showToast(`Telemetry synchronized successfully (${elapsed}ms)`, 'success');
+      if (pill) pill.textContent = `Last synced: ${timeStr}`;
+      if (mobilePill) mobilePill.textContent = `Last synced: ${timeStr}`;
+
+      if (online) {
+        showToast('✅ System data synchronized', 'success');
+      } else {
+        showToast('⚠️ Backend disconnected', 'error');
+      }
     } catch (err) {
-      showToast('Telemetry updated with resilient local baseline', 'info');
+      if (pill) pill.textContent = `Last synced: ${timeStr}`;
+      if (mobilePill) mobilePill.textContent = `Last synced: ${timeStr}`;
+      showToast('⚠️ Backend disconnected', 'error');
     } finally {
       setTimeout(() => {
         if (icon) icon.classList.remove('spinning');
@@ -129,9 +199,12 @@ function showToast(message, type = 'success') {
 
   if (toastTimeout) clearTimeout(toastTimeout);
 
-  const icon = type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️';
+  const defaultIcon = type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️';
+  const hasPrefix = message.startsWith('✅') || message.startsWith('⚠️') || message.startsWith('🚨') || message.startsWith('🚑') || message.startsWith('ℹ️');
+  const iconHtml = hasPrefix ? '' : `<span>${defaultIcon}</span> `;
+
   toast.className = `toast-notification ${type}`;
-  toast.innerHTML = `<span>${icon}</span> <span>${escapeHtml(message)}</span>`;
+  toast.innerHTML = `${iconHtml}<span>${escapeHtml(message)}</span>`;
   toast.classList.remove('hidden');
 
   toastTimeout = setTimeout(() => {
@@ -378,44 +451,88 @@ async function loadOverviewData(showFeedback = false) {
 
 function renderAlertsTable(alerts) {
   const tbody = document.getElementById('alertsTableBody');
+  if (!tbody) return;
+
   if (!alerts || alerts.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td><span class="prio-badge prio-critical">Stalking</span></td>
+        <td><strong>Stalking / Following</strong></td>
         <td><span class="prio-badge prio-critical">CRITICAL</span></td>
-        <td><span class="badge live">RESOLVED</span></td>
+        <td><span class="badge live">ACTIVE</span></td>
         <td>Near Central Metro Station Concourse</td>
         <td>Linear SVM (94.2%)</td>
         <td>12 mins ago</td>
+        <td>
+          <div class="triage-actions-cell">
+            <button class="btn-triage btn-triage-police" data-action="police" data-id="sample-1" title="Dispatch Police 112">🚨 Police 112</button>
+            <button class="btn-triage btn-triage-ambulance" data-action="ambulance" data-id="sample-1" title="Dispatch Ambulance 108">🚑 Amb 108</button>
+            <button class="btn-triage btn-triage-ack" data-action="ack" data-id="sample-1" title="Acknowledge alert">✓ Acknowledge</button>
+            <button class="btn-triage btn-triage-resolve" data-action="resolve" data-id="sample-1" title="Mark as resolved">✓ Resolve</button>
+          </div>
+        </td>
       </tr>
       <tr>
-        <td><span class="prio-badge prio-medium">Medical</span></td>
+        <td><strong>Medical Emergency</strong></td>
         <td><span class="prio-badge prio-medium">MEDIUM</span></td>
         <td><span class="badge info">ESC_AMBULANCE</span></td>
         <td>Sector 14 Market West Gate</td>
         <td>Linear SVM (98.1%)</td>
         <td>34 mins ago</td>
+        <td>
+          <div class="triage-actions-cell">
+            <button class="btn-triage btn-triage-police" data-action="police" data-id="sample-2" title="Dispatch Police 112">🚨 Police 112</button>
+            <button class="btn-triage btn-triage-ambulance" data-action="ambulance" data-id="sample-2" title="Dispatch Ambulance 108">🚑 Amb 108</button>
+            <button class="btn-triage btn-triage-ack" data-action="ack" data-id="sample-2" title="Acknowledge alert">✓ Acknowledge</button>
+            <button class="btn-triage btn-triage-resolve" data-action="resolve" data-id="sample-2" title="Mark as resolved">✓ Resolve</button>
+          </div>
+        </td>
       </tr>
       <tr>
-        <td><span class="prio-badge prio-standard">Harassment</span></td>
+        <td><strong>Harassment</strong></td>
         <td><span class="prio-badge prio-standard">STANDARD</span></td>
         <td><span class="badge win">ACKNOWLEDGED</span></td>
         <td>University Library Bus Stop</td>
         <td>Linear SVM (91.5%)</td>
         <td>1 hr ago</td>
+        <td>
+          <div class="triage-actions-cell">
+            <button class="btn-triage btn-triage-police" data-action="police" data-id="sample-3" title="Dispatch Police 112">🚨 Police 112</button>
+            <button class="btn-triage btn-triage-ambulance" data-action="ambulance" data-id="sample-3" title="Dispatch Ambulance 108">🚑 Amb 108</button>
+            <button class="btn-triage btn-triage-ack" data-action="ack" data-id="sample-3" title="Acknowledge alert">✓ Acknowledge</button>
+            <button class="btn-triage btn-triage-resolve" data-action="resolve" data-id="sample-3" title="Mark as resolved">✓ Resolve</button>
+          </div>
+        </td>
       </tr>
     `;
+    setupAlertActionListeners();
     return;
   }
 
   tbody.innerHTML = alerts.map(a => {
+    const alertId = a.id || a._id;
     const isDuress = a.status === 'DURESS_ACTIVE' || a.escalationStatus === 'COERCED_CANCELLATION';
     const pClass = isDuress || a.priority === 'CRITICAL' ? 'prio-critical' : a.priority === 'MEDIUM' ? 'prio-medium' : 'prio-standard';
-    const sBadge = isDuress ? 'badge' : a.status === 'ACTIVE' || a.status === 'ESCALATED' ? 'badge live' : 'badge win';
+    const sBadge = isDuress ? 'badge' : a.status === 'ACTIVE' || a.status === 'ESCALATED' ? 'badge live' : a.status === 'ACKNOWLEDGED' ? 'badge info' : 'badge win';
     const sStyle = isDuress ? 'style="background: #991b1b; color: #fff; font-weight: 800; border: 1px solid #ef4444; animation: pulse 1.2s infinite;"' : '';
     const statusText = isDuress ? '⚠️ COERCED DURESS (POLICE ACTIVE)' : (a.escalationStatus || a.status || 'ACTIVE');
     const conf = a.mlConfidence ? `${(a.mlConfidence * 100).toFixed(1)}%` : '91.0%';
-    const timeStr = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : 'Just now';
+    const timeStr = a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+    let triageActionsHtml = '';
+    if (a.status === 'RESOLVED') {
+      triageActionsHtml = `<span class="triage-resolved-pill"><span>✓</span> <span>Resolved</span></span>`;
+    } else if (a.status === 'CANCELLED') {
+      triageActionsHtml = `<span class="triage-resolved-pill" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8; border-color: rgba(100, 116, 139, 0.3);"><span>✕</span> <span>Cancelled</span></span>`;
+    } else {
+      triageActionsHtml = `
+        <div class="triage-actions-cell">
+          <button class="btn-triage btn-triage-police" data-action="police" data-id="${alertId}" title="Dispatch Police 112">🚨 Police 112</button>
+          <button class="btn-triage btn-triage-ambulance" data-action="ambulance" data-id="${alertId}" title="Dispatch Ambulance 108">🚑 Amb 108</button>
+          <button class="btn-triage btn-triage-ack" data-action="ack" data-id="${alertId}" title="Acknowledge alert">✓ Acknowledge</button>
+          <button class="btn-triage btn-triage-resolve" data-action="resolve" data-id="${alertId}" title="Mark incident as resolved">✓ Resolve</button>
+        </div>
+      `;
+    }
 
     return `
       <tr ${isDuress ? 'style="background: rgba(153, 27, 27, 0.15); border-left: 4px solid #ef4444;"' : ''}>
@@ -425,9 +542,113 @@ function renderAlertsTable(alerts) {
         <td>${escapeHtml(a.address || 'GPS Geotagged')}</td>
         <td>${escapeHtml(a.modelUsed || 'Linear SVM')} (${conf})</td>
         <td>${timeStr}</td>
+        <td>${triageActionsHtml}</td>
       </tr>
     `;
   }).join('');
+
+  setupAlertActionListeners();
+}
+
+function setupAlertActionListeners() {
+  const tbody = document.getElementById('alertsTableBody');
+  if (!tbody || tbody.dataset.hasTriageListeners) return;
+  tbody.dataset.hasTriageListeners = 'true';
+
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-triage');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    if (action && id) {
+      handleTriageAction(id, action, btn);
+    }
+  });
+}
+
+async function handleTriageAction(alertId, action, btn) {
+  const token = getStoredToken();
+  if (!token) {
+    showToast('Admin authentication required for emergency triage actions.', 'error');
+    const modal = document.getElementById('adminAuthModal');
+    if (modal) modal.classList.remove('hidden');
+    return;
+  }
+
+  const row = btn.closest('tr');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinning" style="display:inline-block;">↻</span>`;
+
+  try {
+    if (alertId.startsWith('sample-')) {
+      // Demo / simulated sample row triage
+      await new Promise(r => setTimeout(r, 350));
+      if (action === 'police') {
+        showToast('🚨 [Demo] Police 112 units dispatched to sector.', 'success');
+        if (row && row.cells[2]) {
+          row.cells[2].innerHTML = '<span class="badge live">ESC_POLICE_112</span>';
+        }
+      } else if (action === 'ambulance') {
+        showToast('🚑 [Demo] Ambulance 108 emergency EMS dispatched.', 'success');
+        if (row && row.cells[2]) {
+          row.cells[2].innerHTML = '<span class="badge info">ESC_AMBULANCE_108</span>';
+        }
+      } else if (action === 'ack') {
+        showToast('✅ [Demo] Alert marked ACKNOWLEDGED by emergency dispatch.', 'success');
+        if (row && row.cells[2]) {
+          row.cells[2].innerHTML = '<span class="badge win">ACKNOWLEDGED</span>';
+        }
+      } else if (action === 'resolve') {
+        showToast('✅ [Demo] Alert marked RESOLVED. Incident closed.', 'success');
+        if (row) {
+          if (row.cells[2]) row.cells[2].innerHTML = '<span class="badge win">RESOLVED</span>';
+          if (row.cells[6]) row.cells[6].innerHTML = '<span class="triage-resolved-pill"><span>✓</span> <span>Resolved</span></span>';
+        }
+      }
+      return;
+    }
+
+    // Real alert backend API call
+    let url = '';
+    let body = null;
+
+    if (action === 'police') {
+      url = `${API_BASE}/api/alerts/${alertId}/escalate`;
+      body = { target: 'POLICE' };
+    } else if (action === 'ambulance') {
+      url = `${API_BASE}/api/alerts/${alertId}/escalate`;
+      body = { target: 'AMBULANCE' };
+    } else if (action === 'ack') {
+      url = `${API_BASE}/api/alerts/${alertId}/acknowledge`;
+    } else if (action === 'resolve') {
+      url = `${API_BASE}/api/alerts/${alertId}/resolve`;
+      body = { reason: 'Resolved by Admin Dispatch Command' };
+    }
+
+    const headers = { 'Authorization': `Bearer ${token}` };
+    if (body) headers['Content-Type'] = 'application/json';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: body ? JSON.stringify(body) : null
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Triage operation failed.');
+    }
+
+    showToast(`✅ ${data.message || 'Emergency triage action executed successfully.'}`, 'success');
+    await loadOverviewData(false);
+  } catch (err) {
+    console.error('Triage action error:', err);
+    showToast(`⚠️ ${err.message || 'Failed to dispatch triage action.'}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
 }
 
 function renderCategoryBars(counts) {

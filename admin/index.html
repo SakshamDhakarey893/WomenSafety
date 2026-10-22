@@ -124,6 +124,24 @@
   <!-- Main Container -->
   <main class="main-content">
     
+    <!-- Offline / Fallback Status Banner -->
+    <div id="offlineStatusBanner" class="offline-banner hidden" role="alert">
+      <div class="offline-banner-content">
+        <span class="offline-banner-icon">⚠️</span>
+        <div class="offline-banner-text">
+          <strong>Offline Mode Active / Backend Gateway Disconnected:</strong>
+          <span id="offlineBannerMsg">Unable to connect to live API at <code id="offlineTargetUrl">http://127.0.0.1:5000</code>. Operating with local fallback telemetry.</span>
+        </div>
+      </div>
+      <button id="retryConnectionBtn" class="btn-retry" title="Retry connection to backend gateway">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        <span>Retry Gateway</span>
+      </button>
+    </div>
+
     <!-- TAB 1: OVERVIEW & EMERGENCIES -->
     <section id="overviewTab" class="tab-content active">
       <!-- KPI Stats Grid -->
@@ -192,10 +210,11 @@
                   <th>Location</th>
                   <th>Model / Conf</th>
                   <th>Time</th>
+                  <th>Triage Actions</th>
                 </tr>
               </thead>
               <tbody id="alertsTableBody">
-                <tr><td colspan="6" class="empty-state">Loading real-time alert data...</td></tr>
+                <tr><td colspan="7" class="empty-state">Loading real-time alert data...</td></tr>
               </tbody>
             </table>
           </div>

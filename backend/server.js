@@ -8,7 +8,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { connectDB } = require('./config/db');
-const { authenticateToken } = require('./middleware/auth');
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
 const AuthController = require('./controllers/authController');
 const AlertController = require('./controllers/alertController');
 const ContactController = require('./controllers/contactController');
@@ -30,10 +30,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static Admin and Research Dashboard
-const adminPath = fs.existsSync(path.join(__dirname, 'admin'))
-  ? path.join(__dirname, 'admin')
-  : path.join(__dirname, '..', 'admin');
+// Serve static Admin and Research Dashboard (prioritizes root workspace admin/, falls back to local backend/admin/)
+const rootAdminPath = path.join(__dirname, '..', 'admin');
+const localAdminPath = path.join(__dirname, 'admin');
+const adminPath = fs.existsSync(rootAdminPath) ? rootAdminPath : localAdminPath;
 app.use('/admin', express.static(adminPath));
 
 // Health check
@@ -89,6 +89,8 @@ alertRouter.post('/', authenticateToken, AlertController.createAlert);
 alertRouter.get('/history', authenticateToken, AlertController.getHistory);
 alertRouter.get('/:id', authenticateToken, AlertController.getAlertById);
 alertRouter.post('/:id/escalate', authenticateToken, AlertController.escalateAlert);
+alertRouter.post('/:id/acknowledge', authenticateToken, AlertController.acknowledgeAlert);
+alertRouter.post('/:id/resolve', authenticateToken, AlertController.resolveAlert);
 alertRouter.post('/:id/cancel', authenticateToken, AlertController.cancelAlert);
 alertRouter.post('/:id/duress', authenticateToken, AlertController.duressCancelAlert);
 alertRouter.post('/:id/location', authenticateToken, AlertController.updateLocation);
@@ -125,9 +127,9 @@ app.post('/api/ml/classify', async (req, res) => {
   res.json(result);
 });
 
-// 7. Admin & Research Endpoints
-app.get('/api/admin/overview', AdminController.getOverview);
-app.get('/api/admin/research', AdminController.getResearchMetrics);
+// 7. Admin & Research Endpoints (Protected: Requires Authenticated Admin)
+app.get('/api/admin/overview', authenticateToken, requireAdmin, AdminController.getOverview);
+app.get('/api/admin/research', authenticateToken, requireAdmin, AdminController.getResearchMetrics);
 
 // 404 handler
 app.use((req, res) => {

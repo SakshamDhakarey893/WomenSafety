@@ -256,6 +256,34 @@ async function runTests() {
     }
   });
 
+  await assertTest('Acknowledge Emergency Alert via Dispatch Action', async () => {
+    const res = await request(`${BACKEND_BASE}/api/alerts/${testAlertId}/acknowledge`, 'POST', null, authToken);
+
+    if (res.status !== 200 || res.data.alert.status !== 'ACKNOWLEDGED') {
+      throw new Error(`Acknowledge failed: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  await assertTest('Escalate Emergency Alert to Ambulance (108)', async () => {
+    const res = await request(`${BACKEND_BASE}/api/alerts/${testAlertId}/escalate`, 'POST', {
+      target: 'AMBULANCE'
+    }, authToken);
+
+    if (res.status !== 200 || res.data.alert.escalationStatus !== 'ESCALATED_TO_AMBULANCE') {
+      throw new Error(`Escalation to Ambulance failed: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  await assertTest('Mark Emergency Alert as Resolved via Dispatch Action', async () => {
+    const res = await request(`${BACKEND_BASE}/api/alerts/${testAlertId}/resolve`, 'POST', {
+      reason: 'Resolved by emergency dispatch triage team'
+    }, authToken);
+
+    if (res.status !== 200 || res.data.alert.status !== 'RESOLVED') {
+      throw new Error(`Resolve failed: ${JSON.stringify(res.data)}`);
+    }
+  });
+
   await assertTest('Cancel Emergency Alert Safely', async () => {
     const res = await request(`${BACKEND_BASE}/api/alerts/${testAlertId}/cancel`, 'POST', {
       reason: 'User reached safe location with campus security'
@@ -346,18 +374,44 @@ async function runTests() {
     }
   });
 
-  // 8. Admin & Research Metrics
-  await assertTest('Admin System Overview & Metrics', async () => {
+  // 8. Admin Security & Research Metrics
+  await assertTest('Admin Overview Security Guard (Reject Unauthenticated 401)', async () => {
     const res = await request(`${BACKEND_BASE}/api/admin/overview`);
-    if (res.status !== 200 || !res.data.summary) {
-      throw new Error('Failed to fetch admin overview');
+    if (res.status !== 401) {
+      throw new Error(`Expected 401 Unauthorized for unprotected request, got: ${res.status}`);
     }
   });
 
-  await assertTest('Admin Research ML Benchmark Metrics', async () => {
-    const res = await request(`${BACKEND_BASE}/api/admin/research`);
+  await assertTest('Admin Overview Security Guard (Reject Non-Admin Role 403)', async () => {
+    const res = await request(`${BACKEND_BASE}/api/admin/overview`, 'GET', null, authToken);
+    if (res.status !== 403) {
+      throw new Error(`Expected 403 Forbidden for non-admin user, got: ${res.status}`);
+    }
+  });
+
+  let adminToken = '';
+  await assertTest('Admin Authentication Gateway Login', async () => {
+    const res = await request(`${BACKEND_BASE}/api/auth/login`, 'POST', {
+      email: 'admin@shaktisense.org',
+      password: 'Admin@123'
+    });
+    if (res.status !== 200 || !res.data.token || res.data.user.role !== 'admin') {
+      throw new Error(`Admin login failed: ${JSON.stringify(res.data)}`);
+    }
+    adminToken = res.data.token;
+  });
+
+  await assertTest('Admin System Overview & Metrics (Authorized Admin 200)', async () => {
+    const res = await request(`${BACKEND_BASE}/api/admin/overview`, 'GET', null, adminToken);
+    if (res.status !== 200 || !res.data.summary) {
+      throw new Error(`Failed to fetch admin overview: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  await assertTest('Admin Research ML Benchmark Metrics (Authorized Admin 200)', async () => {
+    const res = await request(`${BACKEND_BASE}/api/admin/research`, 'GET', null, adminToken);
     if (res.status !== 200 || !res.data.models || !res.data.models.linear_svm) {
-      throw new Error('Failed to fetch research metrics');
+      throw new Error(`Failed to fetch research metrics: ${JSON.stringify(res.data)}`);
     }
   });
 

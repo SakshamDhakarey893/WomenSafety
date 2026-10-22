@@ -33,12 +33,12 @@ const EmergencyAlertSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   status: { 
     type: String, 
-    enum: ['ACTIVE', 'ESCALATED', 'RESOLVED', 'CANCELLED', 'DURESS_ACTIVE'],
+    enum: ['ACTIVE', 'ACKNOWLEDGED', 'ESCALATED', 'RESOLVED', 'CANCELLED', 'DURESS_ACTIVE'],
     default: 'ACTIVE'
   },
   escalationStatus: {
     type: String,
-    enum: ['NONE', 'PENDING', 'ESCALATED_TO_POLICE', 'ESCALATED_TO_AMBULANCE', 'COERCED_CANCELLATION'],
+    enum: ['NONE', 'PENDING', 'ACKNOWLEDGED_BY_DISPATCH', 'ESCALATED_TO_POLICE', 'ESCALATED_TO_AMBULANCE', 'RESOLVED', 'COERCED_CANCELLATION'],
     default: 'NONE'
   },
   liveLocationStatus: {
@@ -114,10 +114,10 @@ class AlertRepository {
 
   static async findActive() {
     if (!isMemoryMode()) {
-      return MongooseAlert.find({ status: { $in: ['ACTIVE', 'ESCALATED'] } }).sort({ createdAt: -1 });
+      return MongooseAlert.find({ status: { $in: ['ACTIVE', 'ESCALATED', 'ACKNOWLEDGED', 'DURESS_ACTIVE'] } }).sort({ createdAt: -1 });
     }
     return Array.from(getMemoryStore().alerts.values())
-      .filter(a => a.status === 'ACTIVE' || a.status === 'ESCALATED')
+      .filter(a => a.status === 'ACTIVE' || a.status === 'ESCALATED' || a.status === 'ACKNOWLEDGED' || a.status === 'DURESS_ACTIVE')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 

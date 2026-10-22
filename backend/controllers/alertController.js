@@ -183,6 +183,49 @@ class AlertController {
     }
   }
 
+  static async acknowledgeAlert(req, res) {
+    try {
+      const { id } = req.params;
+      const alert = await EmergencyAlert.findById(id);
+      if (!alert) return res.status(404).json({ error: 'Alert not found.' });
+
+      const updated = await EmergencyAlert.update(id, {
+        status: 'ACKNOWLEDGED',
+        escalationStatus: 'ACKNOWLEDGED_BY_DISPATCH'
+      });
+
+      return res.json({
+        message: 'Alert acknowledged by emergency dispatch center.',
+        alert: updated
+      });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to acknowledge alert.' });
+    }
+  }
+
+  static async resolveAlert(req, res) {
+    try {
+      const { id } = req.params;
+      const { reason = 'Resolved by Emergency Command' } = req.body;
+      const alert = await EmergencyAlert.findById(id);
+      if (!alert) return res.status(404).json({ error: 'Alert not found.' });
+
+      const updated = await EmergencyAlert.update(id, {
+        status: 'RESOLVED',
+        escalationStatus: 'RESOLVED',
+        liveLocationStatus: 'STOPPED',
+        resolvedAt: new Date()
+      });
+
+      return res.json({
+        message: 'Emergency alert marked as resolved.',
+        alert: updated
+      });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to resolve alert.' });
+    }
+  }
+
   static async duressCancelAlert(req, res) {
     try {
       const { id } = req.params;
