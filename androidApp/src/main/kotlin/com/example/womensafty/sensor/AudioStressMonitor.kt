@@ -20,7 +20,7 @@ import kotlin.math.sqrt
 /**
  * Real-time Hardware Acoustic Sensor & Scream Stress Sentinel:
  * Continuously samples microphone PCM audio amplitude to compute root-mean-square (RMS) acoustic stress.
- * Normalizes acoustic energy into a 0.0 - 1.0 parameter for ShaktiSense Multimodal Threat Fusion.
+ * Normalizes acoustic energy into a 0.0 - 1.0 parameter for RakshaTriage Multimodal Threat Fusion.
  */
 class AudioStressMonitor(
     private val context: Context,

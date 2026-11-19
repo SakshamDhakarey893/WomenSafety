@@ -338,7 +338,7 @@ class AppState(private val scope: CoroutineScope) {
         activeAlert = newAlert
         alertHistory.add(0, newAlert)
 
-        // Asynchronous Live Synchronization to ShaktiSense Backend
+        // Asynchronous Live Synchronization to RakshaTriage Backend
         scope.launch {
             val netResult = apiClient.dispatchAlert(
                 latitude = currentGpsLat,

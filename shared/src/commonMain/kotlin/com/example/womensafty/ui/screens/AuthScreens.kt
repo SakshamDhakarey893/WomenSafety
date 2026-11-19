@@ -47,7 +47,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "ShaktiSense",
+                text = "RakshaTriage",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-0.5).sp

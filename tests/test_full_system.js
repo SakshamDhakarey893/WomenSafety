@@ -48,7 +48,7 @@ function request(urlStr, method = 'GET', data = null, token = null) {
 
 async function runTests() {
   console.log('====================================================');
-  console.log('       SHAKTISENSE FULL-STACK INTEGRATION TEST      ');
+  console.log('       RAKSHATRIAGE FULL-STACK INTEGRATION TEST      ');
   console.log('====================================================\n');
 
   let passed = 0;
@@ -300,7 +300,7 @@ async function runTests() {
 
   await assertTest('Public Tracking Web Portal Static Viewport (HTML Delivery)', async () => {
     const res = await request(`${BACKEND_BASE}/track/${testAlertId}`);
-    if (res.status !== 200 || typeof res.data !== 'string' || !res.data.includes('SHAKTISENSE')) {
+    if (res.status !== 200 || typeof res.data !== 'string' || !res.data.includes('RAKSHATRIAGE')) {
       throw new Error(`Tracking HTML failed to render properly (status: ${res.status})`);
     }
   });

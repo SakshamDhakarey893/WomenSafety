@@ -14,7 +14,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 /**
- * Production-ready in-app self-updater for ShaktiSense.
+ * Production-ready in-app self-updater for RakshaTriage.
  * 100% Free OTA distribution via GitHub Releases or private CDN.
  */
 class AppUpdateManager(private val context: Context) {
@@ -32,9 +32,9 @@ class AppUpdateManager(private val context: Context) {
             }
 
             onStatusUpdate("Preparing download for v$versionName...")
-            Toast.makeText(context, "Downloading ShaktiSense v$versionName...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Downloading RakshaTriage v$versionName...", Toast.LENGTH_SHORT).show()
 
-            val fileName = "ShaktiSense-v$versionName.apk"
+            val fileName = "RakshaTriage-v$versionName.apk"
             val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
             if (downloadDir != null && !downloadDir.exists()) {
                 downloadDir.mkdirs()
@@ -45,7 +45,7 @@ class AppUpdateManager(private val context: Context) {
             }
 
             val request = DownloadManager.Request(Uri.parse(apkUrl)).apply {
-                setTitle("ShaktiSense v$versionName Update")
+                setTitle("RakshaTriage v$versionName Update")
                 setDescription("Downloading enhanced safety modules...")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setDestinationUri(Uri.fromFile(destinationFile))
@@ -106,7 +106,7 @@ class AppUpdateManager(private val context: Context) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
                     Toast.makeText(
                         context,
-                        "Please allow 'Install unknown apps' permission to update ShaktiSense",
+                        "Please allow 'Install unknown apps' permission to update RakshaTriage",
                         Toast.LENGTH_LONG
                     ).show()
 

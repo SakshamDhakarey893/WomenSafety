@@ -149,7 +149,7 @@ fun TopAppHeader(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "ShaktiSense",
+                        text = "RakshaTriage",
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp
                     )

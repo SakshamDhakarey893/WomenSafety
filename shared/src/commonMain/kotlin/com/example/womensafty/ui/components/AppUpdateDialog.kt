@@ -80,7 +80,7 @@ fun AppUpdateDialog(
                     .padding(top = 4.dp)
             ) {
                 Text(
-                    text = "A new version of ShaktiSense is ready with enhanced safety features and performance improvements.",
+                    text = "A new version of RakshaTriage is ready with enhanced safety features and performance improvements.",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp

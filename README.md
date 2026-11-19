@@ -1,6 +1,6 @@
-# ShaktiSense: An Explainable Multimodal AI Framework for Predictive and Proactive Women’s Safety
+# RakshaTriage: An Explainable Multimodal AI Framework for Predictive and Proactive Women’s Safety
 
-A modern, secure, production-quality **ShaktiSense mobile application** built using **Kotlin Multiplatform (KMP - Compose Multiplatform for Android & iOS)**, powered by a **Node.js/Express REST backend**, a **Python NLP & Multimodal Machine Learning service (comparing Multinomial Naive Bayes vs Linear SVM)**, and a dedicated **Admin & Research Dashboard**.
+A modern, secure, production-quality **RakshaTriage mobile application** built using **Kotlin Multiplatform (KMP - Compose Multiplatform for Android & iOS)**, powered by a **Node.js/Express REST backend**, a **Python NLP & Multimodal Machine Learning service (comparing Multinomial Naive Bayes vs Linear SVM)**, and a dedicated **Admin & Research Dashboard**.
 
 ---
 
@@ -207,7 +207,7 @@ The trained pipeline bundle is serialized into `ml-service/models/best_model.job
 
 ## 5. Safe Route vs. Shortest Route Algorithm
 
-Rather than relying purely on shortest-path Euclidean or road distances, ShaktiSense calculates an **Area Risk Score** for geographic zones using rolling time-window alert frequencies:
+Rather than relying purely on shortest-path Euclidean or road distances, RakshaTriage calculates an **Area Risk Score** for geographic zones using rolling time-window alert frequencies:
 
 $$\text{Zone Risk Score} = \sum_{i=1}^{N} \left( w(\text{Category}_i) \times \text{Severity}_i \times e^{-\lambda (t - t_i)} \right)$$
 

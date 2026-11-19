@@ -54,7 +54,7 @@ app.get('/track/:id', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'online',
-    system: 'ShaktiSense Backend API Gateway',
+    system: 'RakshaTriage Backend API Gateway',
     version: '1.0.0',
     timestamp: new Date()
   });
@@ -63,10 +63,10 @@ app.get('/health', (req, res) => {
 // App Version & Update Endpoint (For Free Over-The-Air In-App Updates)
 app.get('/api/app/version', (req, res) => {
   res.json({
-    latestVersionCode: parseInt(process.env.APP_LATEST_VERSION_CODE || '1', 10),
-    latestVersionName: process.env.APP_LATEST_VERSION_NAME || '1.0.0',
-    apkUrl: process.env.APP_RELEASE_APK_URL || 'https://github.com/SakshamDhakarey893/WomenSafety/releases/latest/download/ShaktiSense-v1.0.0.apk',
-    releaseNotes: process.env.APP_RELEASE_NOTES || '• Initial Release\n• Enhanced Real-time Threat Detection\n• Battery-optimized Emergency Dispatch',
+    latestVersionCode: parseInt(process.env.APP_LATEST_VERSION_CODE || '2', 10),
+    latestVersionName: process.env.APP_LATEST_VERSION_NAME || '1.1.0',
+    apkUrl: process.env.APP_RELEASE_APK_URL || 'https://github.com/SakshamDhakarey893/WomenSafety/releases/latest/download/RakshaTriage-v1.1.0.apk',
+    releaseNotes: process.env.APP_RELEASE_NOTES || '• Rebranded to RakshaTriage\n• Enhanced Real-time Threat Triage & Dispatch\n• Explanatory AI Token Attribution',
     forceUpdate: process.env.APP_FORCE_UPDATE === 'true',
     timestamp: new Date().toISOString()
   });
@@ -195,7 +195,7 @@ async function start() {
   await connectDB();
   await seedDefaultAdmin();
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[ShaktiSense API] Server running at http://127.0.0.1:${PORT}`);
+    console.log(`[RakshaTriage API] Server running at http://127.0.0.1:${PORT}`);
     console.log(`[Admin Dashboard] Available at http://127.0.0.1:${PORT}/admin`);
   });
 }

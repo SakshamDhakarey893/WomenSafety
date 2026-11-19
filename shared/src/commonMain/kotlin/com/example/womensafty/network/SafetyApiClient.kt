@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Production-ready resilient Ktor Network Client for ShaktiSense.
+ * Production-ready resilient Ktor Network Client for RakshaTriage.
  * Connects the Kotlin Multiplatform mobile client directly to the Node.js backend.
  * Falls back gracefully to offline queuing if network is degraded.
  */
